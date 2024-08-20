@@ -17,6 +17,7 @@ et j'utiliserai Jenkins pour le déploiement continue.
 Mes pipelines pour le projet seront les suivants :
 - Laravel_ci.yaml (Github Actions) => Pipiline d'intégration continue
 - Jenkinsfile (Jenkins) => Pipiline de déploiement continu
+
 Ayant deux environnement test et prod, le pipeline ci de l'env test sera sur la branche dev, et celui de l'env prod, sur la branche main.
 Mon pipeline CI se termine par un job qui déclenche mon pipeline CD.
 
