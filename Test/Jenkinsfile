@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Repository') 
+        {
+            steps {
+                // Cloner votre dépôt GitHub
+                git 'https://github.com/Akorit-Sarl/AwahusTracking'
+            }
+        }
+        stage('Create ZIP Archive') 
+        {
+            steps {
+                // Créer un fichier ZIP de votre projet
+                sh 'zip -r awahustracking.zip .'
+            }
+        }
+        stage('Upload to cPanel via SSH') 
+        {
+            steps {
+                script {
+                    // Récupérer les secrets Jenkins
+                    def sshServer = env.SSH_SERVER     // Secret pour l'adresse SSH
+                    def sshUser = env.SSH_USER         // Secret pour le nom d'utilisateur SSH
+                    def sshKey = env.SSH_PRIVATE_KEY    // Secret pour la clé privée SSH
+                    def remoteDir = '/test.awahustracking.com/' // Répertoire de destination
+
+                    // Écrire la clé privée dans un fichier temporaire
+                    writeFile file: 'ssh_key', text: sshKey
+                    sh 'chmod 600 ssh_key' // Changer les permissions de la clé
+
+                    // Transférer le fichier ZIP via SCP
+                    sh """
+                    scp -i ssh_key -o StrictHostKeyChecking=no your_project.zip $sshUser@$sshServer:$remoteDir/
+                    """
+                    
+                    // Nettoyer le fichier de clé temporaire
+                    sh 'rm -f ssh_key'
+                }
+            }
+        }
+        stage('Extract ZIP on Server') 
+        {
+            steps {
+                script {
+                    // Connexion SSH pour extraire le fichier ZIP
+                    def sshServer = env.SSH_SERVER     // Secret pour l'adresse SSH
+                    def sshUser = env.SSH_USER         // Secret pour le nom d'utilisateur SSH
+                    def sshKey = env.SSH_PRIVATE_KEY    // Secret pour la clé privée SSH
+                    def remoteDir = '/test.awahustracking.com/' // Répertoire où le ZIP a été transféré
+
+                    // Écrire la clé privée dans un fichier temporaire
+                    writeFile file: 'ssh_key', text: sshKey
+                    sh 'chmod 600 ssh_key' // Changer les permissions de la clé
+
+                    // Extraire le fichier ZIP sur le serveur
+                    sh """
+                    ssh -i ssh_key -o StrictHostKeyChecking=no $sshUser@$sshServer 'unzip -o $remoteDir/awahustracking.zip -d $remoteDir && rm $remoteDir/awahustracking.zip'
+                    """
+                    
+                    // Nettoyer le fichier de clé temporaire
+                    sh 'rm -f ssh_key'
+                }
+            }
+        }
+    }
+}
